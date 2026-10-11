@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>出土文物比對室</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 左欄工作台（上傳＋本次比對＋查資料庫），右欄標本櫃；窄螢幕上下堆疊 */
+:root{
+  --bg:#eef1ee;--paper:#f8faf8;--ink:#1d2621;--muted:#5d6b63;--line:#cdd6d0;
+  --amber:#9a5410;--amber-soft:#f3e3cf;--glass:#2f6b57;--glass-soft:#dbe9e2;--warn:#a33a2a;--hl:#f6d98a;
+  --font-display:"LXGW WenKai TC","Kaiti TC","BiauKai",serif;
+  --font-body:"Noto Sans TC","PingFang TC","Hiragino Sans","Microsoft JhengHei",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --r:6px;color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#121815;--paper:#18201c;--ink:#e3ebe6;--muted:#9aaba1;--line:#2c3933;
+  --amber:#e0a05a;--amber-soft:#3a2a18;--glass:#7cc4a6;--glass-soft:#1e3229;--warn:#ef8a78;--hl:#6b5418;color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+img{max-width:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.7}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:20px;padding-block:28px 64px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;border-bottom:2px solid var(--ink);padding-bottom:14px}
+h1{font-family:var(--font-display);font-size:clamp(28px,4vw,40px);line-height:1.15;margin:0;letter-spacing:.04em;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0;font-size:14px}
+.dbinfo{font-family:var(--font-mono);font-size:12px;color:var(--muted);text-align:right;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:28px;margin-top:24px}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}.dbinfo{align-items:flex-start;text-align:left}}
+h2{font-family:var(--font-display);font-size:22px;margin:0 0 10px;letter-spacing:.03em}
+h3.g{font-family:var(--font-display);font-weight:400;font-size:18px;margin:14px 0 4px}
+.label{font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.drop{border:2px dashed var(--line);border-radius:var(--r);padding:22px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--glass);background:var(--glass-soft)}
+.drop strong{font-family:var(--font-display);font-size:20px;display:block}
+.drop small{color:var(--muted)}
+.thumbs{display:flex;flex-wrap:wrap;gap:8px}
+.thumbs figure{margin:0;position:relative;width:96px;height:96px;border-radius:4px;overflow:hidden;border:1px solid var(--line)}
+.thumbs img{width:100%;height:100%;object-fit:cover;display:block}
+.thumbs button{position:absolute;top:2px;right:2px;border:0;background:rgba(0,0,0,.6);color:#fff;border-radius:3px;font-size:12px;line-height:1;padding:4px 6px;cursor:pointer}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+input[type=text],input[type=password],textarea,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:8px 10px;width:100%}
+textarea{min-height:60px;resize:vertical}
+input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible,.drop:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--glass);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{font:inherit;font-weight:500;border:1px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:4px;padding:9px 18px;cursor:pointer}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.small{padding:4px 10px;font-size:13px}
+.btn.danger{border-color:var(--warn);color:var(--warn);background:transparent}
+.status{font-family:var(--font-mono);font-size:12.5px;color:var(--amber);min-height:1.4em}
+.ok{color:var(--glass)} .bad{color:var(--warn)}
+.steps{display:flex;flex-wrap:wrap;gap:6px;font-family:var(--font-mono);font-size:11.5px}
+.steps span{padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.steps span.on{border-color:var(--amber);color:var(--amber);background:var(--amber-soft)}
+.steps span.done{border-color:var(--glass);color:var(--glass)}
+.obs{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;font-size:14px;margin:0}
+.obs dt{color:var(--muted);font-size:12.5px;padding-top:2px}
+.obs dd{margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12.5px;padding:1px 9px;border-radius:99px;background:var(--glass-soft);color:var(--glass)}
+.chip.text{background:var(--amber-soft);color:var(--amber);font-family:var(--font-display);font-size:14px}
+.answer{font-size:15px;max-width:68ch}
+.answer h3,.answer h2{font-family:var(--font-display);font-size:19px;margin:18px 0 6px;border-bottom:1px solid var(--line);padding-bottom:3px}
+.answer h4{font-size:15px;margin:12px 0 4px}
+.answer p{margin:6px 0}
+.answer ul,.answer ol{padding-left:1.3em;margin:6px 0}
+.answer blockquote{margin:8px 0;padding:4px 12px;border-left:3px solid var(--amber);color:var(--muted)}
+.answer table{border-collapse:collapse;font-size:13.5px}
+.answer td,.answer th{border:1px solid var(--line);padding:3px 8px}
+.tablewrap{overflow-x:auto}
+.cite{font-family:var(--font-mono);font-size:.78em;color:var(--glass);background:var(--glass-soft);padding:0 4px;border-radius:3px;white-space:nowrap}
+details.src{border-top:1px solid var(--line);padding:6px 0}
+details.src summary{cursor:pointer;font-size:13.5px;list-style:none;display:flex;gap:8px;align-items:baseline}
+details.src summary::-webkit-details-marker{display:none}
+details.src summary .id{font-family:var(--font-mono);font-size:11px;color:var(--glass);min-width:2.6em}
+details.src summary .pg{font-family:var(--font-mono);font-size:11.5px;color:var(--muted);margin-left:auto;white-space:nowrap}
+.passage{font-size:13.5px;white-space:pre-wrap;background:var(--bg);border-radius:4px;padding:10px 12px;margin:6px 0 4px;max-height:320px;overflow:auto;line-height:1.75}
+mark{background:var(--hl);color:inherit;padding:0 1px;border-radius:2px}
+.empty{color:var(--muted);font-size:14px;padding:18px;border:1px dashed var(--line);border-radius:var(--r);text-align:center}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;cursor:pointer;display:flex;flex-direction:column;text-align:left;font:inherit;color:inherit;padding:0}
+.card:hover{border-color:var(--glass)}
+.card img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--bg)}
+.card .meta{padding:10px 12px 12px;display:flex;flex-direction:column;gap:3px}
+.card .no{font-family:var(--font-mono);font-size:11px;color:var(--amber);letter-spacing:.06em}
+.card .t{font-family:var(--font-display);font-size:17px;line-height:1.35}
+.card .d{font-size:12.5px;color:var(--muted)}
+.tag{display:inline-block;font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;padding:1px 8px;border:1px solid var(--amber);color:var(--amber);border-radius:3px}
+.note{font-size:12.5px;color:var(--muted)}
+.notice{border:1px solid var(--warn);color:var(--warn);border-radius:4px;padding:8px 12px;font-size:13.5px}
+.dialog{position:fixed;inset:0;background:rgba(10,15,12,.55);display:flex;align-items:flex-start;justify-content:center;padding:max(24px,env(safe-area-inset-top,0px)) 16px 24px;overflow:auto;z-index:20}
+.dialog > .panel{max-width:860px;width:100%}
+.dialog .head{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}
+.recimgs{display:flex;gap:8px;flex-wrap:wrap}
+.recimgs img{max-height:260px;border-radius:4px;border:1px solid var(--line)}
+.sources-list{font-size:13.5px;margin:0;padding-left:1.2em}
+.sources-list li span{font-family:var(--font-mono);font-size:11.5px;color:var(--muted)}
+.web{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px}
+.weblinks{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.weblinks a{display:flex;flex-direction:column;gap:1px;padding:8px 10px;border:1px solid var(--line);border-radius:4px;color:var(--ink);text-decoration:none;background:var(--bg)}
+.weblinks a:hover{border-color:var(--amber)}
+.weblinks a b{font-family:var(--font-display);font-weight:400;font-size:15px}
+.weblinks a small{color:var(--muted);font-size:12px}
+.weblinks a::after{content:"開新分頁搜尋 ↗";font-family:var(--font-mono);font-size:10.5px;color:var(--amber);margin-top:2px}
+.setup .stepno{font-family:var(--font-mono);font-size:11px;color:var(--amber);letter-spacing:.1em}
+.guide ol{padding-left:1.3em;margin:6px 0}
+.guide li{margin:4px 0}
+.guide a{color:var(--glass)}
+code{font-family:var(--font-mono);font-size:.9em;background:var(--bg);padding:0 4px;border-radius:3px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="label">Excavated Object Reference Desk</div>
+      <h1>出土文物比對室</h1>
+      <p class="sub">上傳文物照片，只用研究資料庫裡的文獻比對，整理出可能的品名、年代、出土地點與字樣解讀。</p>
+    </div>
+    <div class="dbinfo">
+      <span id="dbinfo">資料庫未解鎖</span>
+      <span id="aiinfo">AI 未設定</span>
+      <button class="btn ghost small" id="openSetup">設定</button>
+    </div>
+  </header>
+
+  <!-- 設定：密碼＋Gemini Key -->
+  <section class="panel stack setup" id="setup" style="margin-top:24px" aria-labelledby="h-setup">
+    <h2 id="h-setup">開始使用前的設定</h2>
+    <div class="stack">
+      <div class="stepno">STEP 1 · 解鎖資料庫</div>
+      <p class="note" style="margin:0">資料庫裡是加密過的文獻全文，請輸入研究者給你的密碼。</p>
+      <div class="row">
+        <input type="password" id="pw" placeholder="資料庫密碼" autocomplete="current-password" style="flex:1;min-width:0" aria-label="資料庫密碼">
+        <button class="btn" id="unlock">解鎖</button>
+      </div>
+      <label class="row note" for="rememberPw" style="gap:6px"><input type="checkbox" id="rememberPw" checked> 在這台裝置記住密碼</label>
+      <span class="status" id="pwStatus"></span>
+    </div>
+    <div class="stack">
+      <div class="stepno">STEP 2 · 連接你的 Gemini</div>
+      <p class="note" style="margin:0">分析照片使用你自己的 Gemini API Key，費用算在你的帳號。Key 只存在這個瀏覽器，不會傳到其他地方。還沒有 Key？看下方「怎麼取得 Gemini API Key」。</p>
+      <div class="row">
+        <input type="password" id="apikey" placeholder="貼上 Gemini API Key（AIza 開頭）" autocomplete="off" style="flex:1;min-width:0" aria-label="Gemini API Key">
+        <button class="btn" id="saveKey">連接</button>
+      </div>
+      <label class="f" for="model">使用的模型（建議選 flash，速度快又便宜）
+        <select id="model" disabled><option>先連接 Key</option></select>
+      </label>
+      <span class="status" id="keyStatus"></span>
+    </div>
+    <details class="guide" id="guide">
+      <summary style="cursor:pointer;font-weight:500">怎麼取得 Gemini API Key</summary>
+      <h3 class="g">有 Google AI Pro 訂閱（建議）</h3>
+      <p class="note" style="margin:0">Pro 訂閱不會直接增加 API 次數，但每個月附 Google Cloud 額度，可以拿來付 API 費用。比對一件文物大約不到 1 美分。</p>
+      <ol>
+        <li>用訂閱 Pro 的 Google 帳號打開 <a href="https://developers.google.com/profile/u/me/benefits" target="_blank" rel="noopener">Google Developer Program 的 My Benefits</a>，領取每月的 Google Cloud 額度，依指示建立或選擇一個 Cloud 帳單帳戶（可能需要登記信用卡，但會先扣額度）。</li>
+        <li>打開 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio 的 API Keys 頁面</a>，按「Create API key」，選擇連到上一步帳單帳戶的專案。</li>
+        <li>複製 Key（AIza 開頭），貼到上面的 STEP 2，按「連接」。</li>
+      </ol>
+      <h3 class="g">沒有訂閱</h3>
+      <ol>
+        <li>直接到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> 建立 Key，可以用免費額度。</li>
+        <li>免費額度每天次數很少（每次比對用 2 次），而且免費版的資料 Google 可能拿去改進模型。</li>
+      </ol>
+      <p class="note">每次比對會把照片和查到的書頁段落送到 Google Gemini。額度用完會顯示「已達使用上限」，隔天（美國太平洋時間午夜）會重置。</p>
+    </details>
+    <div class="row"><button class="btn ghost small" id="closeSetup" hidden>完成，回到比對</button></div>
+  </section>
+
+  <div class="grid" id="main" hidden>
+    <section class="stack" aria-labelledby="h-work">
+      <div class="panel stack">
+        <h2 id="h-work">新比對</h2>
+        <div class="drop" id="drop" tabindex="0" role="button" aria-label="選擇文物照片">
+          <strong>放入文物照片</strong>
+          <small>點這裡選檔，或把照片拖進來。同一件文物可放多張（正面、底部、字樣特寫）。JPG／PNG／WebP</small>
+        </div>
+        <input type="file" id="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+        <div class="thumbs" id="thumbs"></div>
+        <label class="f" for="hint">補充資訊（選填）：出土地點、層位、尺寸、你看到的字…
+          <textarea id="hint" placeholder="例：花蓮花岡山遺址 F16c 出土，瓶高約 8 cm，底部有「味」字"></textarea>
+        </label>
+        <div class="row">
+          <button class="btn" id="go" disabled>開始比對</button>
+          <button class="btn ghost" id="stop" hidden>停止</button>
+          <span class="status" id="status"></span>
+        </div>
+        <div class="steps" id="steps" hidden>
+          <span data-s="1">1 讀照片</span><span data-s="2">2 查資料庫</span><span data-s="3">3 撰寫介紹</span><span data-s="4">4 存入標本櫃</span>
+        </div>
+        <p class="notice" id="noai" hidden>還沒連接 Gemini，無法分析照片。請按右上「設定」完成 STEP 2。你仍可以用下方「直接查資料庫」搜尋關鍵字。</p>
+      </div>
+
+      <div class="panel stack" id="result" hidden>
+        <div class="row" style="justify-content:space-between">
+          <h2 style="margin:0">比對結果</h2>
+          <span class="tag" id="resNo"></span>
+        </div>
+        <div id="obsBox"></div>
+        <div class="answer" id="answer"></div>
+        <div>
+          <div class="label" style="margin-bottom:4px">資料庫原文段落</div>
+          <div id="passages"></div>
+        </div>
+        <div id="webBox"></div>
+      </div>
+
+      <div class="panel stack">
+        <h2>直接查資料庫</h2>
+        <p class="note" style="margin:0">不經過 AI，直接在文獻全文中找字，不花任何費用。可用空格分隔多個詞，例如：味の素 味素 AJINOMOTO</p>
+        <div class="row">
+          <input type="text" id="q" placeholder="輸入關鍵字" style="flex:1;min-width:0" aria-label="關鍵字">
+          <button class="btn ghost" id="qgo">搜尋</button>
+        </div>
+        <div id="qres"></div>
+        <div id="qweb"></div>
+      </div>
+    </section>
+
+    <section class="stack" aria-labelledby="h-cab">
+      <div class="row" style="justify-content:space-between">
+        <h2 id="h-cab" style="margin:0">標本櫃</h2>
+        <div class="row" style="gap:6px">
+          <span class="note" id="cabCount"></span>
+          <button class="btn ghost small" id="exportBtn">匯出</button>
+          <button class="btn ghost small" id="importBtn">匯入</button>
+          <input type="file" id="importFile" accept="application/json,.json" hidden>
+        </div>
+      </div>
+      <input type="text" id="filter" placeholder="篩選紀錄（品名、字樣、地點）" aria-label="篩選紀錄">
+      <div class="cards" id="cards"></div>
+      <div class="empty" id="cabEmpty">還沒有紀錄。完成比對後，照片和介紹會存在這個瀏覽器裡。想跟同學交換，可以按「匯出」存成檔案，對方再按「匯入」。</div>
+      <span class="status" id="cabStatus"></span>
+    </section>
+  </div>
+</div>
+
+<div class="dialog" id="dlg" hidden>
+  <div class="panel stack" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+    <div class="head">
+      <div>
+        <div class="tag" id="dlgNo"></div>
+        <h2 id="dlgTitle" style="margin:6px 0 0"></h2>
+        <div class="note" id="dlgMeta"></div>
+      </div>
+      <div class="row">
+        <button class="btn ghost small" id="dlgCopy">複製文字</button>
+        <button class="btn danger small" id="dlgDel">刪除</button>
+        <button class="btn small" id="dlgClose">關閉</button>
+      </div>
+    </div>
+    <div class="row" id="dlgConfirm" hidden>
+      <span class="notice">確定刪除這筆紀錄？</span>
+      <button class="btn danger small" id="dlgDelYes">確定刪除</button>
+      <button class="btn ghost small" id="dlgDelNo">取消</button>
+    </div>
+    <div class="recimgs" id="dlgImgs"></div>
+    <div id="dlgObs"></div>
+    <div class="answer" id="dlgAnswer"></div>
+    <div id="dlgPassWrap">
+      <div class="label" style="margin-bottom:4px">引用段落</div>
+      <div id="dlgPassages"></div>
+    </div>
+    <div id="dlgWeb"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<script>
+(() => {
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const LS = {
+  get(k){ try{ return localStorage.getItem("ac."+k); }catch{ return null; } },
+  set(k,v){ try{ v==null ? localStorage.removeItem("ac."+k) : localStorage.setItem("ac."+k, v); }catch{} },
+};
+
+/* ================= 資料庫：解密 ================= */
+let CORPUS = null, FLAT = [];
+const norm = (s) => s.normalize("NFKC").toLowerCase();
+const b64 = (s) => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+let ENC = null;
+async function decryptCorpus(password){
+  if(!ENC){ const r = await fetch("corpus.enc.json", {cache:"no-cache"}); if(!r.ok) throw new Error("load"); ENC = await r.json(); }
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey({name:"PBKDF2", salt:b64(ENC.salt), iterations:ENC.iter, hash:"SHA-256"}, base, {name:"AES-GCM", length:256}, false, ["decrypt"]);
+  let plain;
+  try{ plain = await crypto.subtle.decrypt({name:"AES-GCM", iv:b64(ENC.iv)}, key, b64(ENC.ct)); }
+  catch{ throw new Error("password"); }
+  const stream = new Blob([plain]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return JSON.parse(await new Response(stream).text());
+}
+function useCorpus(c){
+  CORPUS = c; FLAT = [];
+  for(const s of c.sources) s.pages.forEach((t,i) => { if(t && t.trim().length > 20) FLAT.push({sid:s.id, page:i+1, text:t, norm:norm(t)}); });
+  const pages = c.sources.reduce((a,s)=>a+s.pages.length,0);
+  $("dbinfo").innerHTML = `資料庫：${c.sources.length} 份文獻 · ${pages.toLocaleString()} 頁 <button class="btn ghost small" id="showSrc">文獻清單</button>`;
+  $("showSrc").onclick = showSources;
+}
+async function unlock(pw, silent){
+  $("pwStatus").className = "status"; $("pwStatus").textContent = "解鎖中…";
+  try{
+    useCorpus(await decryptCorpus(pw));
+    $("pwStatus").className = "status ok"; $("pwStatus").textContent = "已解鎖。";
+    LS.set("pw", $("rememberPw").checked ? pw : null);
+    refreshGate();
+  }catch(e){
+    $("pwStatus").className = "status bad";
+    $("pwStatus").textContent = e.message==="password" ? "密碼不對，請再確認一次。" : "資料庫檔案載入失敗，請檢查網路後重新整理。";
+    if(silent) LS.set("pw", null);
+  }
+}
+$("unlock").onclick = () => { const pw=$("pw").value.trim(); if(pw) unlock(pw); };
+$("pw").addEventListener("keydown", e => { if(e.key==="Enter") $("unlock").click(); });
+const srcById = (id) => CORPUS?.sources.find(s => s.id === id);
+
+/* ================= Gemini ================= */
+const API = "https://generativelanguage.googleapis.com/v1beta";
+let apiKey = LS.get("key") || "", model = LS.get("model") || "";
+async function gfetch(path, opt={}){
+  const r = await fetch(API + path, {...opt, headers:{"x-goog-api-key":apiKey, "Content-Type":"application/json", ...(opt.headers||{})}});
+  if(!r.ok){
+    let msg=""; try{ msg = (await r.json())?.error?.message || ""; }catch{}
+    const e = new Error(msg); e.status = r.status; throw e;
+  }
+  return r;
+}
+function gErr(e){
+  if(e?.name === "AbortError") return "已停止。";
+  const m = String(e?.message||"");
+  if(e?.status === 400 && /api key/i.test(m)) return "API Key 無效，請到「設定」重新貼上。";
+  if(e?.status === 429) return "已達 Gemini 使用上限（免費額度用完或太頻繁），請稍後或明天再試，或改用有帳單帳戶的 Key。";
+  if(e?.status === 403) return "這把 Key 沒有使用權限（可能被限制或所在地區不支援）。";
+  if(e?.status === 404) return "找不到這個模型，請到「設定」換一個模型。";
+  if(e?.status >= 500) return "Gemini 暫時出問題，請再試一次。";
+  if(e instanceof TypeError) return "連不上 Gemini，請檢查網路。";
+  return "發生錯誤：" + (m || e?.status || "未知");
+}
+function rankModel(n){
+  let s = 0;
+  const v = n.match(/gemini-(\d+(?:\.\d+)?)/); if(v) s += parseFloat(v[1]) * 10;
+  if(/flash/.test(n)) s += 5;
+  if(/lite/.test(n)) s -= 4;
+  if(/pro/.test(n)) s += 2;
+  if(/preview|exp/.test(n)) s -= 3;
+  return s;
+}
+async function loadModels(){
+  const r = await gfetch("/models?pageSize=200");
+  const list = ((await r.json()).models||[])
+    .filter(m => (m.supportedGenerationMethods||[]).includes("generateContent"))
+    .map(m => m.name.replace(/^models\//,""))
+    .filter(n => /^gemini/.test(n) && !/(image|tts|audio|live|embedding|vision|robotics|computer|thinking-exp|learnlm)/.test(n));
+  if(!list.length) throw Object.assign(new Error("no models"), {status:404});
+  list.sort((a,b)=>rankModel(b)-rankModel(a));
+  const flashFirst = list.find(n=>/flash/.test(n) && !/lite|preview|exp/.test(n)) || list[0];
+  if(!model || !list.includes(model)) model = flashFirst;
+  $("model").innerHTML = list.map(n=>`<option value="${esc(n)}"${n===model?" selected":""}>${esc(n)}${n===flashFirst?"（建議）":""}</option>`).join("");
+  $("model").disabled = false;
+  LS.set("model", model);
+}
+$("model").onchange = () => { model = $("model").value; LS.set("model", model); refreshGate(); };
+async function connectKey(k, silent){
+  apiKey = k; $("keyStatus").className="status"; $("keyStatus").textContent = "檢查 Key…";
+  try{
+    await loadModels();
+    LS.set("key", k);
+    $("keyStatus").className="status ok"; $("keyStatus").textContent = "已連接。";
+  }catch(e){
+    apiKey = ""; $("keyStatus").className="status bad"; $("keyStatus").textContent = gErr(e);
+    if(silent) $("keyStatus").textContent += "（上次存的 Key 無法使用）";
+  }
+  refreshGate();
+}
+$("saveKey").onclick = () => { const k=$("apikey").value.trim(); if(k) connectKey(k); };
+$("apikey").addEventListener("keydown", e => { if(e.key==="Enter") $("saveKey").click(); });
+
+function partsFor(text, imgs){ return [{text}, ...imgs.map(d=>({inline_data:{mime_type:"image/jpeg", data:d}}))]; }
+function pickText(j){ return (j?.candidates?.[0]?.content?.parts||[]).filter(p=>!p.thought && p.text).map(p=>p.text).join(""); }
+async function gJSON(prompt, imgs, signal){
+  const r = await gfetch(`/models/${encodeURIComponent(model)}:generateContent`, {method:"POST", signal,
+    body: JSON.stringify({contents:[{role:"user", parts:partsFor(prompt, imgs)}], generationConfig:{responseMimeType:"application/json", temperature:0.2}})});
+  const j = await r.json();
+  const t = pickText(j);
+  if(!t){ const why = j?.promptFeedback?.blockReason || j?.candidates?.[0]?.finishReason; throw new Error("沒有回應" + (why?`（${why}）`:"")); }
+  try{ return JSON.parse(t); }catch{ const m = t.match(/\{[\s\S]*\}/); if(m) return JSON.parse(m[0]); throw new Error("讀照片的結果格式不對，請再按一次開始比對。"); }
+}
+async function gStream(prompt, imgs, signal, onText){
+  const r = await gfetch(`/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`, {method:"POST", signal,
+    body: JSON.stringify({contents:[{role:"user", parts:partsFor(prompt, imgs)}], generationConfig:{temperature:0.3}})});
+  const reader = r.body.getReader(), dec = new TextDecoder();
+  let buf = "", text = "", finish = "";
+  for(;;){
+    const {value, done} = await reader.read(); if(done) break;
+    buf += dec.decode(value, {stream:true});
+    let i;
+    while((i = buf.indexOf("\n")) >= 0){
+      const line = buf.slice(0,i).trim(); buf = buf.slice(i+1);
+      if(!line.startsWith("data:")) continue;
+      try{ const j = JSON.parse(line.slice(5)); const t = pickText(j); if(t){ text += t; onText(text); } finish = j?.candidates?.[0]?.finishReason || finish; }catch{}
+    }
+  }
+  if(!text) throw new Error("沒有回應" + (finish?`（${finish}）`:""));
+  return {text, truncated: finish === "MAX_TOKENS"};
+}
+
+/* ================= 設定面板與畫面切換 ================= */
+function refreshGate(){
+  const ready = !!CORPUS;
+  $("main").hidden = !ready;
+  $("aiinfo").textContent = apiKey && model ? `AI：${model}` : "AI 未設定";
+  $("noai").hidden = !!(apiKey && model);
+  $("closeSetup").hidden = !ready;
+  if(ready && apiKey && model && !forceSetup) $("setup").hidden = true;
+  renderThumbs();
+}
+let forceSetup = false;
+$("openSetup").onclick = () => { forceSetup = true; $("setup").hidden = false; $("setup").scrollIntoView({behavior:"smooth"}); };
+$("closeSetup").onclick = () => { forceSetup = false; $("setup").hidden = true; };
+
+function showSources(){
+  openDialogRaw("研究資料庫", "比對時只會使用這些文獻", "",
+    `<ol class="sources-list">${CORPUS.sources.map(s=>`<li>${esc(s.title)} <span>${s.pages.length} 頁 · ${({zh:"中文",ja:"日文",en:"英文"})[s.lang]||""}</span></li>`).join("")}</ol>
+     <p class="note">日文書與部分中文書為掃描檔，已用文字辨識（OCR）轉成可搜尋文字，少數字可能辨識錯誤；請以原書頁碼回查。</p>
+     <h3 class="g">網路參考（不納入比對）</h3>
+     <p class="note" style="margin:0 0 4px">比對結果下方會用照片上的字產生這些網站的搜尋連結，需要時再點進去看。</p>
+     <ul class="sources-list">${WEB_SITES.map(s=>`<li>${esc(s.name)} <span>${esc(s.url||s.site)}</span></li>`).join("")}</ul>`);
+}
+
+/* ================= 搜尋 ================= */
+function countOcc(hay, needle, cap){ let n=0, i=hay.indexOf(needle); while(i!==-1 && n<cap){ n++; i=hay.indexOf(needle, i+needle.length); } return n; }
+function search(terms, {limit=12, perSource=5}={}){
+  const T = [...new Set(terms.map(t=>norm(String(t)).trim()).filter(t => t.length >= 2 || /[㐀-鿿]/.test(t)))].slice(0,30);
+  if(!T.length || !FLAT.length) return [];
+  const N = FLAT.length;
+  const df = T.map(t => { let c=0; for(const p of FLAT) if(p.norm.includes(t)) c++; return c; });
+  const scored = [];
+  for(const p of FLAT){
+    let s=0, hit=0;
+    T.forEach((t,j) => { if(!df[j]) return; const c = countOcc(p.norm, t, 12); if(!c) return; hit++; s += Math.log(1 + N/df[j]) * (1 + Math.log(c)) * Math.min(t.length, 6); });
+    if(hit) scored.push({p, score: s * (1 + 0.6*(hit-1))});
+  }
+  scored.sort((a,b)=>b.score-a.score);
+  const per = {}, out = [];
+  for(const r of scored){ per[r.p.sid]=(per[r.p.sid]||0)+1; if(per[r.p.sid]>perSource) continue; out.push(r); if(out.length>=limit) break; }
+  return out.map(r => ({sid:r.p.sid, page:r.p.page, text:excerpt(r.p, T, 1700), terms:T}));
+}
+function excerpt(p, T, max){
+  if(p.text.length <= max) return p.text;
+  let first = -1; for(const t of T){ const i=p.norm.indexOf(t); if(i!==-1 && (first===-1 || i<first)) first=i; }
+  const start = Math.max(0, Math.min(first - Math.floor(max/3), p.text.length - max));
+  return (start>0?"…":"") + p.text.slice(start, start+max) + (start+max<p.text.length?"…":"");
+}
+function highlight(text, terms){
+  const h = esc(text);
+  const ts = [...new Set(terms)].filter(Boolean).sort((a,b)=>b.length-a.length).slice(0,20);
+  if(!ts.length) return h;
+  const re = new RegExp("(" + ts.map(t=>esc(t).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|") + ")", "gi");
+  return h.replace(re, "<mark>$1</mark>");
+}
+function passageHTML(ps, withIds){
+  return ps.map((p,i) => { const s = srcById(p.sid);
+    return `<details class="src"><summary>${withIds?`<span class="id">${esc(p.ref||("S"+(i+1)))}</span>`:""}<span>${esc(s?.short||p.sid)}</span><span class="pg">PDF 第 ${p.page} 頁</span></summary><div class="passage">${highlight(p.text, p.terms||[])}</div></details>`;
+  }).join("") || `<div class="note">沒有找到相符段落。</div>`;
+}
+
+/* 網路參考：不存內容，只產生搜尋連結 */
+const WEB_SITES = [
+  {name:"平成ボトル倶楽部日記", note:"出土玻璃瓶研究部落格", site:"heiseibot.exblog.jp"},
+  {name:"拾うたんじゃけえ！", note:"撿拾古瓶部落格", site:"hiroibito.exblog.jp"},
+  {name:"ヤングの古物趣味", note:"古瓶收藏部落格", site:"letoro.exblog.jp"},
+  {name:"POLA 文化研究所 數位博物館", note:"化妝文化藏品", site:"www.cosmetic-culture.po-holdings.co.jp/digitalmuseum"},
+  {name:"丹平製藥 130 年史", note:"公司年表（單頁，直接開啟）", url:"https://www.tampei.co.jp/company/130/history/"},
+];
+function webTerms(o){
+  const vis = (o?.visible_text||[]).map(v=>String(v.text||"").trim()).filter(t=>t && t.length<=20);
+  const ja = (o?.search_terms||[]).filter(t=>/[぀-ヿ]/.test(t) || /^[A-Za-z][A-Za-z .&-]+$/.test(t));
+  return [...new Set([...vis, ...ja])].slice(0,4);
+}
+function webURL(s, terms){
+  if(s.url) return s.url;
+  const q = terms.length ? "(" + terms.map(t => /\s/.test(t) ? `"${t}"` : t).join(" OR ") + ")" : "";
+  return "https://www.google.com/search?q=" + encodeURIComponent(`site:${s.site} ${q}`.trim());
+}
+function webPanel(box, o, idSuffix){
+  const id = "webq" + idSuffix;
+  box.innerHTML = `<div class="web"><div class="label">到網路參考資料查（不會納入比對）</div>
+    <label class="f" for="${id}">搜尋詞，用空格分開，可以自己改<input type="text" id="${id}" value="${esc(webTerms(o).join(" "))}"></label>
+    <div class="weblinks"></div></div>`;
+  const input = box.querySelector("input"), links = box.querySelector(".weblinks");
+  const draw = () => { const t = input.value.trim().split(/\s+/).filter(Boolean);
+    links.innerHTML = WEB_SITES.map(s=>`<a href="${esc(webURL(s,t))}" target="_blank" rel="noopener"><b>${esc(s.name)}</b><small>${esc(s.note)}</small></a>`).join(""); };
+  input.addEventListener("input", draw); draw();
+}
+
+function runQuery(){
+  const q = $("q").value.trim();
+  if(!q){ $("qres").innerHTML=""; $("qweb").innerHTML=""; return; }
+  const res = search(q.split(/\s+/), {limit:20, perSource:8});
+  $("qres").innerHTML = `<div class="note">找到 ${res.length} 段${res.length===20?"（只列前 20 段）":""}</div>` + passageHTML(res, false);
+  webPanel($("qweb"), {visible_text: q.split(/\s+/).map(t=>({text:t}))}, "Q");
+}
+$("qgo").onclick = runQuery;
+$("q").addEventListener("keydown", e => { if(e.key==="Enter") runQuery(); });
+
+/* ================= 照片 ================= */
+let files = [], busy = false, ctl = null;
+const MAXIMG = 4;
+function renderThumbs(){
+  $("thumbs").innerHTML = files.map((f,i)=>`<figure><img src="${f.url}" alt="照片 ${i+1}"><button data-i="${i}" aria-label="移除照片 ${i+1}">✕</button></figure>`).join("");
+  $("thumbs").querySelectorAll("button").forEach(b => b.onclick = () => { URL.revokeObjectURL(files[+b.dataset.i].url); files.splice(+b.dataset.i,1); renderThumbs(); });
+  $("go").disabled = !files.length || !apiKey || !model || !CORPUS || busy;
+}
+async function shrink(blob, maxSide, q){
+  const bmp = await createImageBitmap(blob);
+  const k = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+  const c = document.createElement("canvas"); c.width = Math.round(bmp.width*k); c.height = Math.round(bmp.height*k);
+  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+  return await new Promise(r => c.toBlob(r, "image/jpeg", q));
+}
+const toDataURL = (blob) => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
+async function addFiles(list){
+  for(const f of list){
+    if(files.length >= MAXIMG){ $("status").textContent = `一次最多 ${MAXIMG} 張照片`; break; }
+    if(!/^image\/(jpeg|png|webp)$/.test(f.type)){ $("status").textContent = `「${f.name}」格式不支援，請轉成 JPG 或 PNG（iPhone 的 HEIC 需先轉檔）`; continue; }
+    try{ const blob = await shrink(f, 1600, 0.88); files.push({blob, url: URL.createObjectURL(blob)}); }
+    catch{ $("status").textContent = `「${f.name}」無法讀取`; }
+  }
+  renderThumbs();
+}
+const drop = $("drop");
+drop.onclick = () => $("file").click();
+drop.onkeydown = e => { if(e.key==="Enter"||e.key===" "){ e.preventDefault(); $("file").click(); } };
+$("file").onchange = e => { addFiles([...e.target.files]); e.target.value=""; };
+drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("over"); addFiles([...e.dataTransfer.files]); });
+document.addEventListener("paste", e => { const imgs=[...(e.clipboardData?.files||[])].filter(f=>f.type.startsWith("image/")); if(imgs.length && !$("main").hidden) addFiles(imgs); });
+
+/* ================= 比對流程 ================= */
+function setStep(n){ $("steps").hidden=false; $("steps").querySelectorAll("span").forEach(s=>{ const k=+s.dataset.s; s.className = k<n?"done":k===n?"on":""; }); }
+function obsHTML(o){
+  if(!o) return "";
+  const row = (k,v) => v ? `<dt>${k}</dt><dd>${v}</dd>` : "";
+  const texts = (o.visible_text||[]).map(t=>`<span class="chip text">${esc(t.text||t)}</span>`).join("");
+  const kws = (o.search_terms||[]).map(t=>`<span class="chip">${esc(t)}</span>`).join("");
+  return `<dl class="obs">${row("器物", esc(o.object_type))}${row("材質／顏色", esc([o.material,o.color].filter(Boolean).join("，")))}${row("外觀特徵", esc(o.features))}${row("照片上的字", texts?`<div class="chips">${texts}</div>`:"")}${row("檢索詞", kws?`<div class="chips">${kws}</div>`:"")}</dl>`;
+}
+function renderMD(md){
+  const withCites = md.replace(/〔([^〔〕\n]{1,80})〕/g, (m,x)=>`<span class="cite">${esc(x)}</span>`);
+  return DOMPurify.sanitize(marked.parse(withCites)).replace(/<table/g,'<div class="tablewrap"><table').replace(/<\/table>/g,"</table></div>");
+}
+const OBSERVE_PROMPT = (hint) => `你是協助台灣近現代考古（日治時期為主）研究的助理。附上的照片是同一件出土文物（可能有多個角度）。
+請只根據照片仔細觀察，輸出 JSON（不要其他文字），格式：
+{
+ "object_type": "器物類型，例如：玻璃藥瓶、化妝品瓶、啤酒瓶、陶瓷碗、瓶蓋",
+ "material": "材質",
+ "color": "顏色（例如：透明、淡綠、琥珀色、乳白）",
+ "features": "形制特徵：瓶口形式（王冠栓、軟木塞、螺旋口等）、瓶身形狀、底部標記、模具線、浮雕、商標圖案、尺寸線索等，一段話",
+ "visible_text": [{"text":"照片上看得到的字，照原樣抄錄（含日文、英文、數字、符號）","where":"位置，例如瓶身、瓶底"}],
+ "search_terms": ["用來查文獻資料庫的檢索詞，12 到 24 個"]
+}
+search_terms 的規則：
+- 一定要包含照片上的每段文字（原樣），以及它可能的其他寫法：繁體中文、日文漢字、日文假名、舊字體、英文拼法。例如看到「味素」也要列「味の素」「AJINOMOTO」；「福壽」也要列「福寿」。
+- 加入器物類型與特徵的中文和日文說法，例如「藥瓶」「薬瓶」「目薬」「化粧品」「王冠」「機械成形」「ビール瓶」。
+- 若能辨認商標或公司名稱，也列出來。不要猜測沒有根據的品牌。
+${hint ? "研究者補充的資訊：" + hint : ""}`;
+function answerPrompt(o, hint, passages){
+  const src = passages.map(p => `[${p.ref}] 簡稱：${srcById(p.sid).short}《${srcById(p.sid).title}》PDF 第 ${p.page} 頁\n${p.text}`).join("\n\n---\n\n");
+  return `你是協助台灣近現代考古研究的助理。研究者上傳了一件出土文物的照片（已附上），下面是照片觀察結果，以及從研究者指定的文獻資料庫中查到的段落。
+
+【最重要的規則】
+1. 介紹內容只能根據下面的「資料庫段落」。不可以使用你自己的背景知識或網路上的資訊補充任何事實、年代、公司歷史。
+2. 每個事實後面都要用〔簡稱 p.頁碼〕標註出處，例如〔ガラス瓶の考古学 p.45〕。頁碼用段落標示的 PDF 頁碼。
+3. 資料庫裡找不到的項目，直接寫「資料庫中沒有相關記載」，不要推測填補。
+4. 照片本身看得到的東西（顏色、字樣、形狀）可以描述，但要標明是「照片觀察」。
+5. 日文或英文段落請翻成繁體中文說明，關鍵字保留原文。
+
+【照片觀察】
+${JSON.stringify(o, null, 1)}
+${hint ? "\n【研究者補充】\n" + hint + "\n" : ""}
+【資料庫段落】
+${src || "（沒有找到相符段落）"}
+
+請用繁體中文、Markdown 格式輸出。第一行先輸出「品名：xxx」（10 字以內的簡短名稱，例如「味の素玻璃瓶」），接著依序包含這些段落（用 ### 小標）：
+### 初步判定
+一兩句話：這件文物最可能是什麼、大約年代，並說明信心高低與理由。
+### 照片上的字與商標
+逐一解讀照片上的字樣、商標：在資料中代表什麼品牌或公司、產品用途。
+### 類似文物與出土地點
+資料中提到的相似器物：出現在哪些遺址或地點、出土情境、數量。
+### 年代與製作線索
+資料中可用來判斷年代的依據（製瓶技術、瓶口形式、法規、商標變化等）。
+### 延伸關鍵字
+資料中與這件文物相關、值得再查的詞（每個附一句說明和出處）。
+### 資料缺口
+哪些問題資料庫無法回答，建議研究者可以再找什麼類型的資料。`;
+}
+const titleOf = (t) => (t.match(/^\s*\**品名\**[:：]\s*(.+)$/m)||[])[1]?.replace(/\*+/g,"").trim().slice(0,30) || "";
+const stripTitle = (t) => t.replace(/^\s*\**品名\**[:：].*\n?/m, "");
+
+async function run(){
+  if(busy || !files.length) return;
+  busy = true; ctl = new AbortController();
+  $("go").disabled = true; $("stop").hidden = false; $("result").hidden = false;
+  ["answer","passages","obsBox","webBox"].forEach(id=>$(id).innerHTML=""); $("resNo").textContent = "";
+  const hint = $("hint").value.trim();
+  try{
+    const imgs = [];
+    for(const f of files) imgs.push((await toDataURL(f.blob)).split(",")[1]);
+    setStep(1); $("status").textContent = "Gemini 正在讀照片上的字與特徵…";
+    const obs = await gJSON(OBSERVE_PROMPT(hint), imgs, ctl.signal);
+    obs.search_terms = (obs.search_terms||[]).map(String).filter(Boolean);
+    obs.visible_text = (obs.visible_text||[]).map(v => typeof v==="string" ? {text:v} : v).filter(v=>v && v.text);
+    $("obsBox").innerHTML = obsHTML(obs);
+    webPanel($("webBox"), obs, "Main");
+
+    setStep(2); $("status").textContent = "在資料庫中查找相關段落…";
+    const terms = [...obs.search_terms, ...obs.visible_text.map(v=>v.text), ...(hint? hint.split(/[\s，,、。]+/).filter(w=>w.length>=2):[])];
+    const passages = search(terms, {limit:16, perSource:5});
+    passages.forEach((p,i)=>p.ref="S"+(i+1));
+    $("passages").innerHTML = passageHTML(passages, true);
+
+    setStep(3); $("status").textContent = `找到 ${passages.length} 段相關文獻，Gemini 正在撰寫介紹…`;
+    const res = await gStream(answerPrompt(obs, hint, passages), imgs, ctl.signal, (text) => { $("answer").innerHTML = renderMD(stripTitle(text)); });
+    $("answer").innerHTML = renderMD(stripTitle(res.text)) + (res.truncated ? `<p class="note">（回答過長被截斷）</p>` : "");
+
+    setStep(4); $("status").textContent = "存入標本櫃…";
+    const no = await saveRecord({obs, hint, answer: res.text, passages});
+    $("resNo").textContent = no || "";
+    setStep(5); $("status").textContent = no ? "完成，已存入標本櫃。" : "完成（這次沒能存檔）。";
+    files.forEach(f=>URL.revokeObjectURL(f.url)); files = []; $("hint").value = "";
+  }catch(e){
+    $("status").textContent = gErr(e);
+  }finally{
+    busy = false; $("stop").hidden = true; renderThumbs();
+  }
+}
+$("go").onclick = run;
+$("stop").onclick = () => ctl?.abort();
+
+/* ================= 標本櫃（IndexedDB，存在這個瀏覽器） ================= */
+const idb = (() => {
+  let dbp = null;
+  const open = () => dbp ||= new Promise((res, rej) => { const r = indexedDB.open("artifact-compare", 1); r.onupgradeneeded = () => r.result.createObjectStore("records", {keyPath:"id"}); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  const tx = async (mode, fn) => { const db = await open(); return new Promise((res, rej) => { const t = db.transaction("records", mode); const out = fn(t.objectStore("records")); t.oncomplete = () => res(out?.result); t.onerror = () => rej(t.error); }); };
+  return { all: () => tx("readonly", s => s.getAll()), put: (v) => tx("readwrite", s => s.put(v)), del: (id) => tx("readwrite", s => s.delete(id)) };
+})();
+let RECORDS = [], openRec = null;
+async function loadRecords(){
+  try{ RECORDS = (await idb.all() || []).sort((a,b)=>String(b.createdAt).localeCompare(String(a.createdAt))); }
+  catch{ RECORDS = []; $("cabEmpty").textContent = "這個瀏覽器無法存紀錄（可能是無痕模式）。"; }
+  renderCards();
+}
+async function saveRecord({obs, hint, answer, passages}){
+  const now = new Date();
+  const ymd = now.toLocaleDateString("sv-SE",{timeZone:"Asia/Taipei"}).replace(/-/g,"");
+  const no = `No.${ymd}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
+  const photos = [];
+  for(const f of files.slice(0,3)) photos.push(await toDataURL(await shrink(f.blob, photos.length?520:720, 0.72)));
+  const rec = {id:no, no, title: titleOf(answer) || obs.object_type || "未命名文物", createdAt: now.toISOString(), hint, obs, model,
+    answer: stripTitle(answer), passages: passages.map(p=>({ref:p.ref, sid:p.sid, page:p.page, text:p.text.slice(0,1200), terms:(p.terms||[]).slice(0,12)})), photos};
+  try{ await idb.put(rec); await loadRecords(); return no; }
+  catch{ $("cabStatus").textContent = "存檔失敗：瀏覽器空間不足或在無痕模式。"; return ""; }
+}
+function renderCards(){
+  const f = norm($("filter").value.trim());
+  const list = RECORDS.filter(r => !f || norm([r.title, r.hint, r.no, ...(r.obs?.visible_text||[]).map(v=>v.text), r.obs?.object_type].join(" ")).includes(f));
+  $("cabCount").textContent = RECORDS.length ? `${RECORDS.length} 筆` : "";
+  $("cabEmpty").hidden = RECORDS.length > 0;
+  $("cards").innerHTML = list.map(r=>`<button class="card" data-id="${esc(r.id)}">
+      ${r.photos?.[0] ? `<img src="${r.photos[0]}" alt="${esc(r.title)}">` : ""}
+      <div class="meta"><span class="no">${esc(r.no)}</span><span class="t">${esc(r.title)}</span>
+      <span class="d">${esc((r.obs?.visible_text||[]).map(v=>v.text).slice(0,3).join("／") || r.obs?.object_type || "")}</span>
+      <span class="d">${new Date(r.createdAt).toLocaleString("zh-TW",{timeZone:"Asia/Taipei",dateStyle:"medium",timeStyle:"short"})}</span></div></button>`).join("");
+  $("cards").querySelectorAll(".card").forEach(c => c.onclick = () => showRecord(RECORDS.find(r=>r.id===c.dataset.id)));
+}
+$("filter").addEventListener("input", renderCards);
+
+$("exportBtn").onclick = () => {
+  if(!RECORDS.length){ $("cabStatus").textContent = "目前沒有紀錄可以匯出。"; return; }
+  const blob = new Blob([JSON.stringify({app:"artifact-compare", v:1, exportedAt:new Date().toISOString(), records:RECORDS})], {type:"application/json"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+  a.download = `標本櫃_${new Date().toLocaleDateString("sv-SE",{timeZone:"Asia/Taipei"})}.json`;
+  document.body.append(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+  $("cabStatus").textContent = `已匯出 ${RECORDS.length} 筆。`;
+};
+$("importBtn").onclick = () => $("importFile").click();
+$("importFile").onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = ""; if(!f) return;
+  try{
+    const data = JSON.parse(await f.text());
+    const recs = (data.records||[]).filter(r => r && r.id && r.answer);
+    for(const r of recs) await idb.put(r);
+    await loadRecords();
+    $("cabStatus").textContent = `已匯入 ${recs.length} 筆（同編號的會被覆蓋）。`;
+  }catch{ $("cabStatus").textContent = "匯入失敗：檔案不是標本櫃匯出的格式。"; }
+};
+
+function openDialogRaw(title, meta, no, bodyHTML){
+  openRec = null;
+  $("dlgNo").textContent = no; $("dlgNo").hidden = !no;
+  $("dlgTitle").textContent = title; $("dlgMeta").textContent = meta;
+  ["dlgImgs","dlgObs","dlgPassages","dlgWeb"].forEach(id=>$(id).innerHTML="");
+  $("dlgAnswer").innerHTML = bodyHTML;
+  $("dlgPassWrap").hidden = true; $("dlgDel").hidden = true; $("dlgCopy").hidden = true; $("dlgConfirm").hidden = true;
+  $("dlg").hidden = false; $("dlgClose").focus();
+}
+function showRecord(r){
+  if(!r) return;
+  openDialogRaw(r.title, new Date(r.createdAt).toLocaleString("zh-TW",{timeZone:"Asia/Taipei"}) + (r.hint ? "　補充：" + r.hint : ""), r.no, renderMD(r.answer||""));
+  openRec = r;
+  $("dlgImgs").innerHTML = (r.photos||[]).map((p,i)=>`<img src="${p}" alt="${esc(r.title)} 照片 ${i+1}">`).join("");
+  $("dlgObs").innerHTML = obsHTML(r.obs);
+  $("dlgPassages").innerHTML = passageHTML(r.passages||[], true);
+  $("dlgPassWrap").hidden = false;
+  webPanel($("dlgWeb"), r.obs, "Dlg");
+  $("dlgDel").hidden = false; $("dlgCopy").hidden = false;
+}
+$("dlgClose").onclick = () => { $("dlg").hidden = true; };
+$("dlg").addEventListener("click", e => { if(e.target === $("dlg")) $("dlg").hidden = true; });
+document.addEventListener("keydown", e => { if(e.key==="Escape" && !$("dlg").hidden) $("dlg").hidden = true; });
+$("dlgDel").onclick = () => { $("dlgConfirm").hidden = false; };
+$("dlgDelNo").onclick = () => { $("dlgConfirm").hidden = true; };
+$("dlgDelYes").onclick = async () => { if(!openRec) return; await idb.del(openRec.id); $("dlg").hidden = true; loadRecords(); };
+$("dlgCopy").onclick = async () => {
+  if(!openRec) return; const r = openRec;
+  const refs = (r.passages||[]).map(p=>`[${p.ref}] ${srcById(p.sid)?.title||p.sid}，PDF 第 ${p.page} 頁`).join("\n");
+  const txt = `${r.no} ${r.title}\n${r.hint?("補充："+r.hint+"\n"):""}\n${r.answer}\n\n引用段落：\n${refs}`;
+  try{ await navigator.clipboard.writeText(txt); $("dlgCopy").textContent = "已複製"; setTimeout(()=>$("dlgCopy").textContent="複製文字",1500); }
+  catch{ const sel = getSelection(); const rg = document.createRange(); rg.selectNodeContents($("dlgAnswer")); sel.removeAllRanges(); sel.addRange(rg); $("dlgCopy").textContent = "已選取，請按 ⌘C／Ctrl+C"; }
+};
+
+/* ================= 啟動 ================= */
+(async () => {
+  loadRecords();
+  const pw = LS.get("pw"); if(pw){ $("pw").value = pw; await unlock(pw, true); }
+  if(apiKey){ $("apikey").value = apiKey; await connectKey(apiKey, true); }
+  refreshGate();
+})();
+})();
+</script>
+</body>
+</html>
