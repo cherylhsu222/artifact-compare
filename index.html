@@ -143,7 +143,7 @@ code{font-family:var(--font-mono);font-size:.9em;background:var(--bg);padding:0 
       <div class="label" style="margin-bottom:4px">這個網站怎麼用</div>
       <ol>
         <li><b>拍照</b>：把出土文物拍清楚，最好有正面、瓶底和字樣特寫，最多 4 張。</li>
-        <li><b>上傳比對</b>：把照片拖進「新比對」，可以補充出土地點或尺寸，按「開始比對」。大約 30 秒到 1 分鐘，網站會讀出照片上的字，在研究資料庫裡找相關段落，寫出這件文物的介紹，每句都標了出處（書名和 PDF 頁碼），點「資料庫原文段落」可以對照原文。</li>
+        <li><b>上傳比對</b>：把照片拖進「新比對」，可以補充出土地點或尺寸，按「開始比對」。大約 30 秒到 1 分鐘，網站會讀出照片上的字，在研究資料庫裡找相關段落，寫出這件文物的介紹，每句都標了出處（書名和書上印的頁碼），點「資料庫原文段落」可以對照原文。</li>
         <li><b>延伸查詢</b>：結果下方有 5 個參考網站的搜尋按鈕，需要時再點開看。</li>
         <li><b>紀錄</b>：每次結果自動存進右邊的「標本櫃」，只存在你這台裝置的瀏覽器。換電腦或想給別人看，用「匯出」存成檔案。</li>
         <li><b>不用 AI 也能查</b>：「直接查資料庫」可以自己打關鍵字搜尋全文，不花任何額度。</li>
@@ -335,6 +335,10 @@ async function unlock(pw, silent){
 $("unlock").onclick = () => { const pw=$("pw").value.trim(); if(pw) unlock(pw); };
 $("pw").addEventListener("keydown", e => { if(e.key==="Enter") $("unlock").click(); });
 const srcById = (id) => CORPUS?.sources.find(s => s.id === id);
+/* 書上印的頁碼（由 PDF 頁首頁尾判讀）；封面、圖版等沒有印頁碼的頁回傳 null */
+const bookPage = (sid, page) => srcById(sid)?.labels?.[page-1] ?? null;
+const pageText = (sid, page) => { const b = bookPage(sid, page); return b ? `p.${b}（PDF 第 ${page} 頁）` : `PDF 第 ${page} 頁（此頁無印刷頁碼）`; };
+const citePage = (sid, page) => { const b = bookPage(sid, page); return b ? `p.${b}` : `PDF第${page}頁`; };
 
 /* ================= Gemini ================= */
 const API = "https://generativelanguage.googleapis.com/v1beta";
@@ -482,7 +486,7 @@ function highlight(text, terms){
 }
 function passageHTML(ps, withIds){
   return ps.map((p,i) => { const s = srcById(p.sid);
-    return `<details class="src"><summary>${withIds?`<span class="id">${esc(p.ref||("S"+(i+1)))}</span>`:""}<span>${esc(s?.short||p.sid)}</span><span class="pg">PDF 第 ${p.page} 頁</span></summary><div class="passage">${highlight(p.text, p.terms||[])}</div></details>`;
+    return `<details class="src"><summary>${withIds?`<span class="id">${esc(p.ref||("S"+(i+1)))}</span>`:""}<span>${esc(s?.short||p.sid)}</span><span class="pg">${esc(pageText(p.sid, p.page))}</span></summary><div class="passage">${highlight(p.text, p.terms||[])}</div></details>`;
   }).join("") || `<div class="note">沒有找到相符段落。</div>`;
 }
 
@@ -588,12 +592,12 @@ search_terms 的規則：
 - 若能辨認商標或公司名稱，也列出來。不要猜測沒有根據的品牌。
 ${hint ? "研究者補充的資訊：" + hint : ""}`;
 function answerPrompt(o, hint, passages){
-  const src = passages.map(p => `[${p.ref}] 簡稱：${srcById(p.sid).short}《${srcById(p.sid).title}》PDF 第 ${p.page} 頁\n${p.text}`).join("\n\n---\n\n");
+  const src = passages.map(p => `[${p.ref}] 簡稱：${srcById(p.sid).short}《${srcById(p.sid).title}》 出處標註請寫：〔${srcById(p.sid).short} ${citePage(p.sid, p.page)}〕\n${p.text}`).join("\n\n---\n\n");
   return `你是協助台灣近現代考古研究的助理。研究者上傳了一件出土文物的照片（已附上），下面是照片觀察結果，以及從研究者指定的文獻資料庫中查到的段落。
 
 【最重要的規則】
 1. 介紹內容只能根據下面的「資料庫段落」。不可以使用你自己的背景知識或網路上的資訊補充任何事實、年代、公司歷史。
-2. 每個事實後面都要用〔簡稱 p.頁碼〕標註出處，例如〔ガラス瓶の考古学 p.45〕。頁碼用段落標示的 PDF 頁碼。
+2. 每個事實後面都要標註出處，直接照抄該段落上方「出處標註請寫」給的格式，例如〔ガラス瓶の考古学 p.45〕。頁碼是書上印的頁碼，不要自己換算或改寫。
 3. 資料庫裡找不到的項目，直接寫「資料庫中沒有相關記載」，不要推測填補。
 4. 照片本身看得到的東西（顏色、字樣、形狀）可以描述，但要標明是「照片觀察」。
 5. 日文或英文段落請翻成繁體中文說明，關鍵字保留原文。
@@ -747,7 +751,7 @@ $("dlgDelNo").onclick = () => { $("dlgConfirm").hidden = true; };
 $("dlgDelYes").onclick = async () => { if(!openRec) return; await idb.del(openRec.id); $("dlg").hidden = true; loadRecords(); };
 $("dlgCopy").onclick = async () => {
   if(!openRec) return; const r = openRec;
-  const refs = (r.passages||[]).map(p=>`[${p.ref}] ${srcById(p.sid)?.title||p.sid}，PDF 第 ${p.page} 頁`).join("\n");
+  const refs = (r.passages||[]).map(p=>`[${p.ref}] ${srcById(p.sid)?.title||p.sid}，${pageText(p.sid, p.page)}`).join("\n");
   const txt = `${r.no} ${r.title}\n${r.hint?("補充："+r.hint+"\n"):""}\n${r.answer}\n\n引用段落：\n${refs}`;
   try{ await navigator.clipboard.writeText(txt); $("dlgCopy").textContent = "已複製"; setTimeout(()=>$("dlgCopy").textContent="複製文字",1500); }
   catch{ const sel = getSelection(); const rg = document.createRange(); rg.selectNodeContents($("dlgAnswer")); sel.removeAllRanges(); sel.addRange(rg); $("dlgCopy").textContent = "已選取，請按 ⌘C／Ctrl+C"; }
