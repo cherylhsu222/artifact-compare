@@ -7,7 +7,7 @@
 ## 使用前需要
 
 1. **資料庫密碼**：文獻全文已加密（`corpus.enc.json`），請向研究者索取密碼。
-2. **自己的 Gemini API Key**：在 [Google AI Studio](https://aistudio.google.com/apikey) 建立。費用算在你自己的 Google 帳號；有 Google AI Pro 訂閱的人可以用每月附贈的 Google Cloud 額度支付。網站內「設定」有完整步驟。
+2. **自己的 Gemini API Key**：在 [Google AI Studio](https://aistudio.google.com/apikey) 建立。建議先用免費 Key（不用綁卡、不會扣錢，但每天次數有限）。網站內「設定」有完整步驟。
 
 API Key 與密碼都只存在你自己的瀏覽器。比對紀錄（標本櫃）也存在瀏覽器裡，可以匯出成檔案交換。
 

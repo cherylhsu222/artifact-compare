@@ -110,6 +110,9 @@ mark{background:var(--hl);color:inherit;padding:0 1px;border-radius:2px}
 .weblinks a b{font-family:var(--font-display);font-weight:400;font-size:15px}
 .weblinks a small{color:var(--muted);font-size:12px}
 .weblinks a::after{content:"開新分頁搜尋 ↗";font-family:var(--font-mono);font-size:10.5px;color:var(--amber);margin-top:2px}
+.howto{background:var(--bg);border-radius:var(--r);padding:12px 14px}
+.howto ol{padding-left:1.3em;margin:0 0 6px}
+.howto li{margin:3px 0}
 .setup .stepno{font-family:var(--font-mono);font-size:11px;color:var(--amber);letter-spacing:.1em}
 .guide ol{padding-left:1.3em;margin:6px 0}
 .guide li{margin:4px 0}
@@ -136,6 +139,17 @@ code{font-family:var(--font-mono);font-size:.9em;background:var(--bg);padding:0 
   <!-- 設定：密碼＋Gemini Key -->
   <section class="panel stack setup" id="setup" style="margin-top:24px" aria-labelledby="h-setup">
     <h2 id="h-setup">開始使用前的設定</h2>
+    <div class="howto">
+      <div class="label" style="margin-bottom:4px">這個網站怎麼用</div>
+      <ol>
+        <li><b>拍照</b>：把出土文物拍清楚，最好有正面、瓶底和字樣特寫，最多 4 張。</li>
+        <li><b>上傳比對</b>：把照片拖進「新比對」，可以補充出土地點或尺寸，按「開始比對」。大約 30 秒到 1 分鐘，網站會讀出照片上的字，在研究資料庫裡找相關段落，寫出這件文物的介紹，每句都標了出處（書名和 PDF 頁碼），點「資料庫原文段落」可以對照原文。</li>
+        <li><b>延伸查詢</b>：結果下方有 5 個參考網站的搜尋按鈕，需要時再點開看。</li>
+        <li><b>紀錄</b>：每次結果自動存進右邊的「標本櫃」，只存在你這台裝置的瀏覽器。換電腦或想給別人看，用「匯出」存成檔案。</li>
+        <li><b>不用 AI 也能查</b>：「直接查資料庫」可以自己打關鍵字搜尋全文，不花任何額度。</li>
+      </ol>
+      <p class="note" style="margin:0">第一次使用請完成下面兩個步驟，之後這台裝置會記住，打開就能直接用。</p>
+    </div>
     <div class="stack">
       <div class="stepno">STEP 1 · 解鎖資料庫</div>
       <p class="note" style="margin:0">資料庫裡是加密過的文獻全文，請輸入研究者給你的密碼。</p>
@@ -158,21 +172,18 @@ code{font-family:var(--font-mono);font-size:.9em;background:var(--bg);padding:0 
       </label>
       <span class="status" id="keyStatus"></span>
     </div>
-    <details class="guide" id="guide">
-      <summary style="cursor:pointer;font-weight:500">怎麼取得 Gemini API Key</summary>
-      <h3 class="g">有 Google AI Pro 訂閱（建議）</h3>
-      <p class="note" style="margin:0">Pro 訂閱不會直接增加 API 次數，但每個月附 Google Cloud 額度，可以拿來付 API 費用。比對一件文物大約不到 1 美分。</p>
+    <details class="guide" id="guide" open>
+      <summary style="cursor:pointer;font-weight:500">怎麼取得 Gemini API Key（約 2 分鐘）</summary>
+      <h3 class="g">建議：免費 Key，不用綁卡、不會扣錢</h3>
       <ol>
-        <li>用訂閱 Pro 的 Google 帳號打開 <a href="https://developers.google.com/profile/u/me/benefits" target="_blank" rel="noopener">Google Developer Program 的 My Benefits</a>，領取每月的 Google Cloud 額度，依指示建立或選擇一個 Cloud 帳單帳戶（可能需要登記信用卡，但會先扣額度）。</li>
-        <li>打開 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio 的 API Keys 頁面</a>，按「Create API key」，選擇連到上一步帳單帳戶的專案。</li>
-        <li>複製 Key（AIza 開頭），貼到上面的 STEP 2，按「連接」。</li>
+        <li>用你的 Google 帳號打開 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio 的 API Keys 頁面</a>。第一次進去要同意使用條款。</li>
+        <li>按「Create API key」（建立 API 金鑰）。如果問你要選哪個專案，選預設的或讓它自動建立就好，<b>不需要</b>設定帳單。</li>
+        <li>複製出現的 Key（AIza 開頭的一長串），貼到上面的 STEP 2，按「連接」，看到「已連接」就完成了。</li>
       </ol>
-      <h3 class="g">沒有訂閱</h3>
-      <ol>
-        <li>直接到 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> 建立 Key，可以用免費額度。</li>
-        <li>免費額度每天次數很少（每次比對用 2 次），而且免費版的資料 Google 可能拿去改進模型。</li>
-      </ol>
-      <p class="note">每次比對會把照片和查到的書頁段落送到 Google Gemini。額度用完會顯示「已達使用上限」，隔天（美國太平洋時間午夜）會重置。</p>
+      <p class="note" style="margin:0">免費額度每天的次數有限，每比對一件會用掉 2 次，用完會顯示「已達使用上限」，隔天（台灣時間下午 3 點或 4 點左右）重置。免費版送出的內容 Google 可能用來改進模型。</p>
+      <h3 class="g">免費額度不夠用的時候</h3>
+      <p class="note" style="margin:0">有 Google AI Pro 的人，可以到 <a href="https://developers.google.com/profile/u/me/benefits" target="_blank" rel="noopener">Google Developer Program 的 My Benefits</a> 看有沒有「每月 Google Cloud 額度」。有的話依指示連結一個 Cloud 帳單帳戶（通常要登記信用卡，但會先扣額度；比對一件不到 1 美分），再到 AI Studio 建一把連到那個帳單帳戶的新 Key。建議在帳單帳戶設定預算提醒。</p>
+      <p class="note">Key 只存在你的瀏覽器。不要把 Key 傳給別人或貼到公開的地方。</p>
     </details>
     <div class="row"><button class="btn ghost small" id="closeSetup" hidden>完成，回到比對</button></div>
   </section>
